@@ -51,7 +51,7 @@ public class DeathMessagesListener implements Listener {
         // a few assumptions about the killer player.
         Player killer = (Player) event.getKiller();
 
-        ItemStack item = killer.getInventory().getItem(killer.getActiveItemHand());
+        ItemStack item = killer.getInventory().getItemInMainHand();
         Component deathMessage = null;
         for (Map.Entry<ItemCollection, List<Component>> entry : messages.messages().entrySet()) {
             if (!entry.getKey().contains(item.getType())) {

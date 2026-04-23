@@ -4,7 +4,8 @@ plugins {
     id("java-library")
     id("xyz.jpenilla.run-paper") version "2.3.0"
     id("com.modrinth.minotaur") version "2.+"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "8.3.9"
+    eclipse
 }
 
 group = "org.battleplugins"
@@ -16,12 +17,16 @@ val supportedVersions = listOf(
     "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4"
 )
 
-java.toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+java.toolchain {
+    languageVersion.set(JavaLanguageVersion.of(17))
+    vendor.set(JvmVendorSpec.GRAAL_VM)
+}
 
 repositories {
     mavenCentral()
 
     maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://repo.purpurmc.org/snapshots")
     maven("https://repo.battleplugins.org/releases/")
     maven("https://repo.battleplugins.org/snapshots/")
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
@@ -32,7 +37,7 @@ dependencies {
     implementation(libs.commons.dbcp)
     implementation(libs.commons.pool)
 
-    compileOnlyApi(libs.paper.api)
+    compileOnlyApi(libs.purpur.api)
     compileOnlyApi(libs.battlearena)
     compileOnlyApi(libs.placeholderapi)
 }
@@ -44,12 +49,7 @@ java {
 
 tasks {
     runServer {
-        minecraftVersion("1.20.6")
-
-        // Set Java 21 (1.20.6 requires Java 21)
-        javaLauncher = project.javaToolchains.launcherFor {
-            languageVersion = JavaLanguageVersion.of(21)
-        }
+        minecraftVersion("1.19.4")
     }
 
     jar {

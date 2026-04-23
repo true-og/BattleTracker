@@ -1,6 +1,6 @@
 [versions]
 bstats-bukkit = "3.0.2"
-paper-api = "1.20.4-R0.1-SNAPSHOT"
+purpur-api = "1.19.4-R0.1-SNAPSHOT"
 commons = "2.12.0"
 battlearena = "4.0.0-SNAPSHOT"
 placeholderapi = "2.11.6"
@@ -8,7 +8,7 @@ placeholderapi = "2.11.6"
 [libraries]
 battlearena = { group = "org.battleplugins", name = "arena", version.ref = "battlearena" }
 bstats-bukkit = { group = "org.bstats", name = "bstats-bukkit", version.ref = "bstats-bukkit" }
-paper-api = { group = "io.papermc.paper", name = "paper-api", version.ref = "paper-api" }
+purpur-api = { group = "org.purpurmc.purpur", name = "purpur-api", version.ref = "purpur-api" }
 commons-dbcp = { group = "org.apache.commons", name = "commons-dbcp2", version.ref = "commons" }
 commons-pool = { group = "org.apache.commons", name = "commons-pool2", version.ref = "commons" }
 placeholderapi = { group = "me.clip", name = "placeholderapi", version.ref = "placeholderapi" }
