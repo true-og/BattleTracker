@@ -94,12 +94,6 @@ death-messages:
         - "<white><gold>%player%</gold> committed toaster bath.</white>"
         - "<white><gold>%player%</gold> committed funeral.</white>"
         - "<white><gold>%player%</gold> committed lego step.</white>"
-      kill:
-        - "<white>hari kari suited <gold>%player%</gold>.</white>"
-        - "<white><gold>%player%</gold> chose the ignoble way out.</white>"
-        - "<white><gold>%player%</gold> committed toaster bath.</white>"
-        - "<white><gold>%player%</gold> committed funeral.</white>"
-        - "<white><gold>%player%</gold> committed lego step.</white>"
       drowning:
         - "<white><gold>%player%</gold> needs to learn to swim.</white>"
         - "<white>Dog paddling wasn't enough for <gold>%player%</gold>.</white>"

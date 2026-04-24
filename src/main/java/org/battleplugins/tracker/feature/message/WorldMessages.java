@@ -1,9 +1,11 @@
 package org.battleplugins.tracker.feature.message;
 
 import net.kyori.adventure.text.Component;
+import org.battleplugins.tracker.BattleTracker;
 import org.battleplugins.tracker.util.MessageUtil;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +18,9 @@ public record WorldMessages(
         Map<EntityDamageEvent.DamageCause, List<Component>> messages,
         List<Component> defaultMessages
 ) {
+    private static final Map<String, EntityDamageEvent.DamageCause> LEGACY_DAMAGE_CAUSES = Map.of(
+            "KILL", EntityDamageEvent.DamageCause.SUICIDE
+    );
 
     public static WorldMessages load(ConfigurationSection section) {
         boolean enabled = section.getBoolean("enabled");
@@ -39,12 +44,39 @@ public record WorldMessages(
                 return;
             }
 
+            EntityDamageEvent.DamageCause cause = parseDamageCause(key);
+            if (cause == null) {
+                BattleTracker.getInstance().warn("Skipping unsupported world death message cause '{}' at {}.{}.",
+                        key, messagesSection.getCurrentPath(), key);
+                return;
+            }
+
             List<String> messageList = messagesSection.getStringList(key);
-            messages.put(EntityDamageEvent.DamageCause.valueOf(key.toUpperCase(Locale.ROOT)), messageList.stream()
+            if (messages.containsKey(cause)) {
+                BattleTracker.getInstance().warn("Ignoring duplicate world death message cause '{}' at {}.{}.",
+                        key, messagesSection.getCurrentPath(), key);
+                return;
+            }
+
+            messages.put(cause, messageList.stream()
                     .map(MessageUtil::deserialize)
                     .collect(Collectors.toList()));
         });
 
         return new WorldMessages(true, messages, defaultMessages);
+    }
+
+    private static @Nullable EntityDamageEvent.DamageCause parseDamageCause(String key) {
+        String normalizedKey = key.toUpperCase(Locale.ROOT);
+        EntityDamageEvent.DamageCause legacyCause = LEGACY_DAMAGE_CAUSES.get(normalizedKey);
+        if (legacyCause != null) {
+            return legacyCause;
+        }
+
+        try {
+            return EntityDamageEvent.DamageCause.valueOf(normalizedKey);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 }
