@@ -53,7 +53,7 @@ tasks {
     }
 
     jar {
-        archiveClassifier.set("unshaded")
+        enabled = false
     }
 
     shadowJar {
@@ -66,6 +66,10 @@ tasks {
 
         archiveFileName.set("BattleTracker.jar")
         archiveClassifier.set("")
+    }
+
+    build {
+        dependsOn(shadowJar)
     }
 
     javadoc {
