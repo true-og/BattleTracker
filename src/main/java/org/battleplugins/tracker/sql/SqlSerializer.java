@@ -233,7 +233,7 @@ public abstract class SqlSerializer {
 
     protected void executeUpdate(boolean async, String strRawStmt, Object... varArgs) {
         if (async) {
-            CompletableFuture.runAsync(() -> {
+            SqlInstance.getInstance().runAsync(() -> {
                 try {
                     this.executeUpdate(strRawStmt, varArgs);
                 } catch (Exception e) {
@@ -269,7 +269,7 @@ public abstract class SqlSerializer {
     protected CompletableFuture<Void> executeBatch(boolean async, String updateStatement, List<List<Object>> batch) {
         CompletableFuture<Void> future;
         if (async) {
-            future = CompletableFuture.runAsync(() -> this.executeBatch(updateStatement, batch));
+            future = SqlInstance.getInstance().runAsync(() -> this.executeBatch(updateStatement, batch));
         } else {
             future = new CompletableFuture<>();
             try {

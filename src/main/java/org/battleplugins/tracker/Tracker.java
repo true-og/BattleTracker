@@ -335,6 +335,16 @@ public interface Tracker {
     CompletableFuture<Void> saveAll();
 
     /**
+     * Saves the records for all the players in the cache.
+     *
+     * @param async whether the save should run asynchronously
+     * @return a future that completes when the save finishes
+     */
+    default CompletableFuture<Void> saveAll(boolean async) {
+        return this.saveAll();
+    }
+
+    /**
      * Flushes cached data in the tracker.
      * <p>
      * This method provides the option to aggressively

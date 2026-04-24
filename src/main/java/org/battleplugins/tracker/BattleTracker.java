@@ -19,6 +19,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -32,6 +33,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -63,8 +65,10 @@ public class BattleTracker extends JavaPlugin {
 
     private Path trackersPath;
     private Path featuresPath;
+    private BukkitTask autoSaveTask;
 
     private boolean debugMode;
+    private volatile boolean shuttingDown;
 
     @Override
     public void onLoad() {
@@ -81,6 +85,7 @@ public class BattleTracker extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        this.shuttingDown = false;
         Bukkit.getPluginManager().registerEvents(new BattleTrackerListener(this), this);
 
         // Register default calculators
@@ -90,28 +95,7 @@ public class BattleTracker extends JavaPlugin {
 
         // Loads all tracker loaders
         this.loadTrackerLoaders(this.trackersPath);
-
-        if (this.config.getAdvanced().saveInterval() != -1) {
-            Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-                this.debug("Auto save: Saving all trackers.");
-                for (Tracker tracker : this.trackers.values()) {
-                    long startTIme = System.currentTimeMillis();
-                    tracker.saveAll().whenComplete((aVoid, e) -> {
-                        if (e != null) {
-                            this.error("Error saving tracker {}!", tracker.getName(), e);
-                        } else {
-                            this.debug("Auto save: Saved tracker {} in {}ms.", tracker.getName(), System.currentTimeMillis() - startTIme);
-                        }
-
-                        tracker.flush(false);
-
-                        this.debug("Auto save: Flushed tracker {}.", tracker.getName());
-                    });
-                }
-
-                this.debug("Auto save: Finished saving all trackers.");
-            }, this.config.getAdvanced().saveInterval() * 20L, this.config.getAdvanced().saveInterval() * 20L);
-        }
+        this.startAutoSaveTask();
 
         new Metrics(this, PLUGIN_ID);
     }
@@ -153,16 +137,24 @@ public class BattleTracker extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        this.disable(true).whenComplete((aVoid, e) -> {
-            if (e != null) {
-                this.error("Error disabling BattleTracker!", e);
+        this.shuttingDown = true;
+        try {
+            this.disable(true).join();
+        } catch (CompletionException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            this.error("Error disabling BattleTracker!", cause);
+        } finally {
+            SqlInstance sqlInstance = SqlInstance.getInstance();
+            if (sqlInstance != null) {
+                sqlInstance.close();
             }
-        });
-
-        SqlInstance.getInstance().close();
+        }
     }
 
     private CompletableFuture<Void> disable(boolean block) {
+        this.shuttingDown = true;
+        this.cancelAutoSaveTask();
+
         if (this.battleArenaFeature != null) {
             this.unloadFeature(this.battleArenaFeature);
         }
@@ -187,11 +179,11 @@ public class BattleTracker extends JavaPlugin {
                 listeners.forEach(HandlerList::unregisterAll);
             }
 
-            saveFutures.add(tracker.saveAll().thenRun(() -> tracker.destroy(block)));
+            saveFutures.add(tracker.saveAll(!block).thenRun(() -> tracker.destroy(block)));
         }
 
         CompletableFuture<Void> future = CompletableFuture.allOf(saveFutures.toArray(CompletableFuture[]::new))
-                .thenRun(this.trackers::clear);
+                .whenComplete((aVoid, throwable) -> this.trackers.clear());
 
         if (block) {
             future.join();
@@ -221,9 +213,51 @@ public class BattleTracker extends JavaPlugin {
             // Reload the config
             this.loadConfig(true);
 
+            this.shuttingDown = false;
             this.enable();
             this.postInitialize();
+            this.startAutoSaveTask();
         }, Bukkit.getScheduler().getMainThreadExecutor(this));
+    }
+
+    private void cancelAutoSaveTask() {
+        if (this.autoSaveTask == null) {
+            return;
+        }
+
+        this.autoSaveTask.cancel();
+        this.autoSaveTask = null;
+    }
+
+    private void startAutoSaveTask() {
+        this.cancelAutoSaveTask();
+        if (this.config.getAdvanced().saveInterval() == -1) {
+            return;
+        }
+
+        this.autoSaveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+            if (this.shuttingDown) {
+                return;
+            }
+
+            this.debug("Auto save: Saving all trackers.");
+            for (Tracker tracker : this.trackers.values()) {
+                long startTIme = System.currentTimeMillis();
+                tracker.saveAll().whenComplete((aVoid, e) -> {
+                    if (e != null) {
+                        this.error("Error saving tracker {}!", tracker.getName(), e);
+                    } else {
+                        this.debug("Auto save: Saved tracker {} in {}ms.", tracker.getName(), System.currentTimeMillis() - startTIme);
+                    }
+
+                    tracker.flush(false);
+
+                    this.debug("Auto save: Flushed tracker {}.", tracker.getName());
+                });
+            }
+
+            this.debug("Auto save: Finished saving all trackers.");
+        }, this.config.getAdvanced().saveInterval() * 20L, this.config.getAdvanced().saveInterval() * 20L);
     }
 
     <T extends Feature> T loadFeature(Path path, Function<ConfigurationSection, T> featureLoader) {

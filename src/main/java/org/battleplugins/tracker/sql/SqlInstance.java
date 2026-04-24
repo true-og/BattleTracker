@@ -15,6 +15,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Holds an SQL connection to a database.
@@ -37,6 +41,7 @@ public final class SqlInstance {
     private final String port;
     private final String username;
     private final String password;
+    private final ExecutorService asyncExecutor;
 
     private PoolingDataSource<PoolableConnection> dataSource;
 
@@ -53,6 +58,11 @@ public final class SqlInstance {
         this.port = options.port();
         this.username = options.user();
         this.password = options.password();
+        this.asyncExecutor = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "BattleTracker-SQL");
+            thread.setDaemon(true);
+            return thread;
+        });
 
         this.initDataSource();
 
@@ -60,11 +70,24 @@ public final class SqlInstance {
     }
 
     public void close() {
+        this.asyncExecutor.shutdown();
+        try {
+            if (!this.asyncExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+                BattleTracker.getInstance().warn("Timed out waiting for SQL tasks to finish before shutdown.");
+                this.asyncExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            this.asyncExecutor.shutdownNow();
+        }
+
         try {
             this.dataSource.close();
         } catch (SQLException e) {
             BattleTracker.getInstance().error("Could not close SQL connection!", e);
         }
+
+        instance = null;
     }
 
     private void initDataSource() {
@@ -84,8 +107,8 @@ public final class SqlInstance {
         switch (this.type) {
             case SQLITE:
                 datasourceString = connectionString = "jdbc:sqlite:" + this.url + "/" + this.db + ".sqlite";
-                maxActive = 1;
-                minIdle = -1;
+                maxActive = 2;
+                minIdle = 1;
                 break;
             case MYSQL:
             default:
@@ -137,6 +160,10 @@ public final class SqlInstance {
 
     public DataSource getDataSource() {
         return this.dataSource;
+    }
+
+    public CompletableFuture<Void> runAsync(Runnable runnable) {
+        return CompletableFuture.runAsync(runnable, this.asyncExecutor);
     }
 
     public static SqlInstance getInstance() {

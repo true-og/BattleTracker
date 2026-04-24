@@ -12,12 +12,16 @@ import java.sql.Timestamp;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Main SQL serializer for Trackers.
@@ -35,6 +39,7 @@ public class TrackerSqlSerializer extends SqlSerializer {
 
     private final List<String> overallColumns;
     private final List<String> versusColumns;
+    private final ReentrantLock saveLock = new ReentrantLock();
 
     public TrackerSqlSerializer(SqlTracker tracker) {
         this(
@@ -195,23 +200,57 @@ public class TrackerSqlSerializer extends SqlSerializer {
     }
 
     public CompletableFuture<Void> save(UUID uuid) {
-        return this.saveTotals(uuid);
+        return this.save(uuid, true);
+    }
+
+    public CompletableFuture<Void> save(UUID uuid, boolean async) {
+        return this.saveTotals(async, uuid);
     }
 
     public CompletableFuture<Void> saveAll() {
-        return this.saveTotals(this.tracker.getRecords().keySet().toArray(UUID[]::new));
+        return this.saveAll(true);
     }
 
-    public CompletableFuture<Void> saveTotals(UUID... uuids) {
+    public CompletableFuture<Void> saveAll(boolean async) {
+        return this.saveTotals(async, this.tracker.getRecords().keySet().toArray(UUID[]::new));
+    }
+
+    public CompletableFuture<Void> saveTotals(boolean async, UUID... uuids) {
         if (uuids == null || uuids.length == 0) {
             return CompletableFuture.completedFuture(null);
         }
 
+        if (async) {
+            return SqlInstance.getInstance().runAsync(() -> this.saveTotalsSync(uuids));
+        }
+
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        try {
+            this.saveTotalsSync(uuids);
+            future.complete(null);
+        } catch (Exception e) {
+            future.completeExceptionally(e);
+        }
+
+        return future;
+    }
+
+    private void saveTotalsSync(UUID... uuids) {
+        this.saveLock.lock();
+        try {
+            this.saveBatches(uuids);
+        } finally {
+            this.saveLock.unlock();
+        }
+    }
+
+    private void saveBatches(UUID... uuids) {
+        Set<UUID> requestedUuids = new HashSet<>(List.of(uuids));
         List<List<Object>> overallBatch = new ArrayList<>();
         List<List<Object>> versusBatch = new ArrayList<>();
         List<List<Object>> tallyBatch = new ArrayList<>();
+        Set<TallyEntry> dirtyTallyEntries = new LinkedHashSet<>();
 
-        List<CompletableFuture<Void>> batches = new ArrayList<>();
         for (UUID uuid : uuids) {
             Record record = this.tracker.getRecords().getCached(uuid);
             if (record == null) {
@@ -228,43 +267,51 @@ public class TrackerSqlSerializer extends SqlSerializer {
                 overallObjectArray[i + 2] = record.getStatistics().get(StatType.get(overallColumn)).toString();
             }
 
-            overallBatch.add(List.of(overallObjectArray));
-            this.executeBatch(true, this.constructInsertOverallStatement(), overallBatch);
-
-            this.tracker.getTallies().save(versusTally -> {
-                if (!versusTally.id1().equals(uuid) && !versusTally.id2().equals(uuid)) {
-                    return;
-                }
-
-                // +4 in array for double name and id
-                String[] versusObjectArray = new String[this.versusColumns.size() + 2];
-                versusObjectArray[0] = versusTally.id1().toString();
-                versusObjectArray[1] = versusTally.id2().toString();
-
-                for (int i = 0; i < this.versusColumns.size(); i++) {
-                    String versusColumn = this.versusColumns.get(i);
-                    versusObjectArray[i + 2] = Optional.ofNullable(versusTally.statistics().get(StatType.get(versusColumn))).orElse(0f).toString();
-                }
-
-                versusBatch.add(List.of(versusObjectArray));
-                batches.add(this.executeBatch(true, this.constructInsertVersusStatement(), versusBatch));
-            });
+            overallBatch.add(java.util.Arrays.asList((Object[]) overallObjectArray));
 
             this.tracker.getTallyEntries().save(uuid, entry -> {
-                String[] tallyObjectArray = new String[4];
-                tallyObjectArray[0] = entry.id1().toString();
-                tallyObjectArray[1] = entry.id2().toString();
-                tallyObjectArray[2] = entry.tie() ? "1" : "0";
-                tallyObjectArray[3] = Timestamp.from(entry.timestamp()).toString();
-
-                // Use Arrays.asList instead of List.of to correctly convert the String[] into a List<String>
-                // List.of(tallyObjectArray) would treat the array as a single element, causing SQL parameter mismatch
-                tallyBatch.add(java.util.Arrays.asList(tallyObjectArray));
-                batches.add(this.executeBatch(true, this.constructInsertTallyStatement(), tallyBatch));
+                dirtyTallyEntries.add(entry);
             });
         }
 
-        return CompletableFuture.allOf(batches.toArray(CompletableFuture[]::new));
+        this.tracker.getTallies().save(versusTally ->
+                        requestedUuids.contains(versusTally.id1()) || requestedUuids.contains(versusTally.id2()),
+                versusTally -> {
+                    String[] versusObjectArray = new String[this.versusColumns.size() + 2];
+                    versusObjectArray[0] = versusTally.id1().toString();
+                    versusObjectArray[1] = versusTally.id2().toString();
+
+                    for (int i = 0; i < this.versusColumns.size(); i++) {
+                        String versusColumn = this.versusColumns.get(i);
+                        versusObjectArray[i + 2] = Optional.ofNullable(versusTally.statistics().get(StatType.get(versusColumn))).orElse(0f).toString();
+                    }
+
+                    versusBatch.add(java.util.Arrays.asList((Object[]) versusObjectArray));
+                });
+
+        for (TallyEntry entry : dirtyTallyEntries) {
+            String[] tallyObjectArray = new String[4];
+            tallyObjectArray[0] = entry.id1().toString();
+            tallyObjectArray[1] = entry.id2().toString();
+            tallyObjectArray[2] = entry.tie() ? "1" : "0";
+            tallyObjectArray[3] = Timestamp.from(entry.timestamp()).toString();
+
+            // Use Arrays.asList instead of List.of to correctly convert the String[] into a List<String>
+            // List.of(tallyObjectArray) would treat the array as a single element, causing SQL parameter mismatch
+            tallyBatch.add(java.util.Arrays.asList((Object[]) tallyObjectArray));
+        }
+
+        if (!overallBatch.isEmpty()) {
+            this.executeBatch(false, this.constructInsertOverallStatement(), overallBatch);
+        }
+
+        if (!versusBatch.isEmpty()) {
+            this.executeBatch(false, this.constructInsertVersusStatement(), versusBatch);
+        }
+
+        if (!tallyBatch.isEmpty()) {
+            this.executeBatch(false, this.constructInsertTallyStatement(), tallyBatch);
+        }
     }
 
     public List<String> getOverallColumns() {

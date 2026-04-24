@@ -130,7 +130,17 @@ public interface DbCache {
          *
          * @param value the value to save
          */
-        void save(Consumer<V> value);
+        default void save(Consumer<V> value) {
+            this.save(ignored -> true, value);
+        }
+
+        /**
+         * Saves matching dirty values in the cache to the database.
+         *
+         * @param predicate selects which dirty values should be persisted
+         * @param value the value to save
+         */
+        void save(Predicate<V> predicate, Consumer<V> value);
 
         /**
          * Flushes the cache.

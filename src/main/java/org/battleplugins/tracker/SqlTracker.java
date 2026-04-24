@@ -323,6 +323,11 @@ public class SqlTracker implements Tracker {
     }
 
     @Override
+    public CompletableFuture<Void> saveAll(boolean async) {
+        return this.sqlSerializer.saveAll(async);
+    }
+
+    @Override
     public void flush(boolean aggressive) {
         for (UUID uuid : this.records.keySet()) {
             this.records.flush(uuid, aggressive);
@@ -336,15 +341,6 @@ public class SqlTracker implements Tracker {
 
     @Override
     public void destroy(boolean block) {
-        Supplier<Void> destroyRunnable = () -> {
-            this.sqlSerializer.closeConnection(this.sqlSerializer.getConnection());
-            return null;
-        };
-
-        if (block) {
-            destroyRunnable.get();
-        } else {
-            CompletableFuture.supplyAsync(destroyRunnable);
-        }
+        this.flush(true);
     }
 }

@@ -80,9 +80,9 @@ class DbCacheSet<V> implements DbCache.SetCache<V> {
     }
 
     @Override
-    public void save(Consumer<V> valueConsumer) {
+    public void save(Predicate<V> predicate, Consumer<V> valueConsumer) {
         this.entries.forEach(dbValue -> {
-            if (dbValue.dirty) {
+            if (dbValue.dirty && predicate.test(dbValue.value)) {
                 valueConsumer.accept(dbValue.value);
                 dbValue.dirty = false;
             }
