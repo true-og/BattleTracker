@@ -109,9 +109,12 @@ death-messages:
         - "<white>The <black>void</black> has claimed <gold>%player%</gold></white>"
         - "<white><gold>%player%</gold> fell into the eternal abyss of the void.</white>"
         - "<white>The void has swallowed <gold>%player%</gold> whole.</white>"
-      world_border:
-        - "<white><gold>%player%</gold> was pushed to the limit by the world border.</white>"
-        - "<white>The world border claimed <gold>%player%</gold> as its own.</white>"
+      # WORLD_BORDER is not a DamageCause on MC 1.19.4 (added in 1.20+); the loader
+      # rejects it with "Skipping unsupported world death message cause". Re-enable
+      # this block after upgrading to 1.20+.
+      #world_border:
+      #  - "<white><gold>%player%</gold> was pushed to the limit by the world border.</white>"
+      #  - "<white>The world border claimed <gold>%player%</gold> as its own.</white>"
       entity_attack:
         - "<white>In a fierce clash, <gold>%player%</gold> was overwhelmed by an entity.</white>"
         - "<white><gold>%player%</gold> fell to a relentless entity's assault.</white>"
