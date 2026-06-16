@@ -8,6 +8,7 @@ import org.battleplugins.tracker.feature.recap.RecapEntry;
 import org.battleplugins.tracker.stat.Record;
 import org.battleplugins.tracker.stat.StatType;
 import org.battleplugins.tracker.stat.TallyEntry;
+import org.battleplugins.tracker.util.DuelsHook;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -38,6 +39,11 @@ public class PvPListener implements Listener {
 
         Player killed = event.getEntity();
         if (this.tracker.getDisabledWorlds().contains(killed.getWorld().getName())) {
+            return;
+        }
+
+        // Duel deaths/kills must not be tracked; use the pre-captured marker (live query races Duels' own death handler).
+        if (DuelsHook.isDuelDeath(killed)) {
             return;
         }
 
@@ -115,6 +121,11 @@ public class PvPListener implements Listener {
 
         Recap recap = this.tracker.getFeature(Recap.class);
         if (recap == null) {
+            return;
+        }
+
+        // Don't build a damage recap from a Duels match (after cheap exits to keep reflection off the common path).
+        if (DuelsHook.isInMatch(damaged)) {
             return;
         }
 

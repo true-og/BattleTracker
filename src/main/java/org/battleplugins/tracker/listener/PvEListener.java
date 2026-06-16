@@ -9,6 +9,7 @@ import org.battleplugins.tracker.feature.recap.Recap;
 import org.battleplugins.tracker.feature.recap.RecapEntry;
 import org.battleplugins.tracker.stat.Record;
 import org.battleplugins.tracker.stat.StatType;
+import org.battleplugins.tracker.util.DuelsHook;
 import org.battleplugins.tracker.util.Util;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Entity;
@@ -42,6 +43,11 @@ public class PvEListener implements Listener {
     public void onDeath(PlayerDeathEvent event) {
         Player killed = event.getEntity();
         if (this.tracker.getDisabledWorlds().contains(killed.getWorld().getName())) {
+            return;
+        }
+
+        // Duel PvE/world deaths (fall, lava, void, mobs) must not count; use pre-captured marker (live query races Duels).
+        if (DuelsHook.isDuelDeath(killed)) {
             return;
         }
 
@@ -124,6 +130,11 @@ public class PvEListener implements Listener {
             return;
         }
 
+        // A duelist killing a mob mid-match must not be tracked.
+        if (DuelsHook.isInMatch(killer)) {
+            return;
+        }
+
         Record killerRecord = this.tracker.getOrCreateRecord(killer);
         if (killerRecord.isTracking()) {
             this.tracker.incrementValue(StatType.KILLS, killer);
@@ -148,6 +159,11 @@ public class PvEListener implements Listener {
 
         Recap recap = this.tracker.getFeature(Recap.class);
         if (recap == null) {
+            return;
+        }
+
+        // Don't build a damage recap from a Duels match (after cheap exits to keep reflection off the common path).
+        if (DuelsHook.isInMatch(player)) {
             return;
         }
 

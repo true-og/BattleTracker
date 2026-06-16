@@ -87,6 +87,8 @@ public class BattleTracker extends JavaPlugin {
     public void onEnable() {
         this.shuttingDown = false;
         Bukkit.getPluginManager().registerEvents(new BattleTrackerListener(this), this);
+        // Captures duel match membership before Duels tears the match down on death.
+        Bukkit.getPluginManager().registerEvents(new org.battleplugins.tracker.util.DuelsHook.DeathGuard(), this);
 
         // Register default calculators
         this.registerCalculator(new EloCalculator(this.config.getRating().elo()));
