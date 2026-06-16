@@ -8,7 +8,8 @@
 config-version: 1.0 # The config version, do not change!
 
 # Whether combat logging is enabled.
-enabled: true
+# Disabled: EternalCombat-OG is the authoritative combat-log system; running both conflicts (double combat timers, mob-triggered combat, duplicate logout kills).
+enabled: false
 
 # Worlds that combat logging is disabled in.
 disabled-worlds: []
