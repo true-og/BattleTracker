@@ -17,7 +17,7 @@ recap:
   # - all: Displays all information about a player in the recap, including armor, inventory and damage
   # - armor: Just shows the armor a player was wearing
   # - recap: Just shows the damage recap of a player
-  display-content: armor
+  display-content: all
   # Whether a damage recap should be shown when a player hovers over
   # a player's death message.
   hover-recap: true
@@ -28,7 +28,7 @@ recap:
 tracked-statistics:
   - pvp
 # Worlds that this tracker is disabled in.
-disabled-worlds: []
+disabled-worlds: ["HB1-hub", "SP1-hub", "Shake_It", "Ancient_Plateau"]
 # The rating calculator to use
 # - elo: the default rating calculator
 calculator: elo
@@ -47,11 +47,11 @@ killstreaks:
   messages:
     default: "<white><gold>%player%</gold> is on a killstreak of <red>%kills%</red> kills!</white>"
     10: "<white><gold>%player%</gold> is on a crazy killstreak of <red>%kills%</red> kills!</white>"
-    20: "<white><gold>%player%</gold> is on an <light_purple>unstoppable</light_purple> killstreak of <red>%kills%</red> kills!</white>"
+    25: "<white><gold>%player%</gold> is on an <light_purple>unstoppable</light_purple> killstreak of <red>%kills%</red> kills!</white>"
 # Rampages
 # - A rampage occurs when a player kills a certain number of players in a short amount of time
 rampage:
-  enabled: true
+  enabled: false
   rampage-time: 10
   # The audience of the death messages
   # - global: all players
@@ -72,7 +72,7 @@ death-messages:
   # - world: only players in the same world
   # - local: only the player and the target
   # - arena: only players in the same arena (requires BattleArena)
-  audience: global
+  audience: world
   # World death messages
   world:
     # Disabled - see pve.yml

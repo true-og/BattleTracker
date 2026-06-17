@@ -12,7 +12,7 @@ name: PvE
 # Whether the damage recap should be enabled for this tracker
 recap:
   # Whether the damage recap should be enabled for this tracker
-  enabled: true
+  enabled: false
   # The content to display in the recap
   # - all: Displays all information about a player in the recap, including armor, inventory and damage
   # - armor: Just shows the armor a player was wearing
@@ -26,8 +26,8 @@ recap:
 # - pve: tracks player vs enemy statistics
 # - world: tracks world statistics (i.e. damage due to lava, fall damage, etc.)
 tracked-statistics:
-  - pve
-  - world
+  #- pve
+  #- world
 # Worlds that this tracker is disabled in.
 disabled-worlds: []
 # The rating calculator to use

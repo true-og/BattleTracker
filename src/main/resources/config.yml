@@ -18,18 +18,18 @@ rating:
 database:
   type: sqlite # sqlite or mysql
   prefix: bt_
-  db: tracker # Database name
+  db: battletracker # Database name
   url : localhost # Ignored if not mysql
   port : "3306" # Ignored if not mysql
-  username: root
-  password: ""
+  username: "^{MARIADB_USER}"
+  password: "^{MARIADB_PASSWORD}"
 
 # Advanced options
 advanced:
   # Whether the database should flush a player's data
   # when they leave the server. Only useful to enable on
   # large server setups where memory is constrained
-  flush-on-leave: false
+  flush-on-leave: true
   # Database auto-save interval. Default 5 minutes
   save-interval: 300
   # How long a database entry should be kept in memory
