@@ -271,6 +271,20 @@ public interface DbCache {
     }
 
     interface MapCache<K, V> extends MapBase<K, V, V> {
+
+        /**
+         * Marks the entry for the given key as saved (clears its dirty flag).
+         * <p>
+         * Unlike {@link #save(Object, Consumer)}, this unconditionally clears
+         * the dirty flag and does not invoke a consumer. It is used when the
+         * value has already been persisted through another code path (such as
+         * a batch insert) and the cache simply needs to be told the value is
+         * now in sync with the database. Without this, {@link #flush(Object, boolean)}
+         * would incorrectly report the value as unsaved.
+         *
+         * @param key the key to mark as saved
+         */
+        void markSaved(K key);
     }
 
     interface MultimapCache<K, V> extends MapBase<K, V, List<V>> {

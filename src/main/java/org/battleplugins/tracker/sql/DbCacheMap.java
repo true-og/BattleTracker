@@ -90,6 +90,14 @@ class DbCacheMap<K, V> implements DbCache.MapCache<K, V> {
     }
 
     @Override
+    public void markSaved(K key) {
+        DbValue<V> dbValue = this.entries.get(key);
+        if (dbValue != null) {
+            dbValue.dirty = false;
+        }
+    }
+
+    @Override
     public void flush(K key, boolean all) {
         DbValue<V> dbValue = this.entries.get(key);
         if (dbValue == null) {

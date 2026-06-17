@@ -303,6 +303,15 @@ public class TrackerSqlSerializer extends SqlSerializer {
 
         if (!overallBatch.isEmpty()) {
             this.executeBatch(false, this.constructInsertOverallStatement(), overallBatch);
+
+            // Records are persisted directly through the batch above rather than
+            // through the cache's save(...) path (unlike tallies/tally entries),
+            // so their dirty flags are never cleared. Mark them saved now that
+            // they are in the database; otherwise flush(true) on shutdown reports
+            // them as "Unsaved DB value found in cache" even though they were written.
+            for (UUID uuid : uuids) {
+                this.tracker.getRecords().markSaved(uuid);
+            }
         }
 
         if (!versusBatch.isEmpty()) {
