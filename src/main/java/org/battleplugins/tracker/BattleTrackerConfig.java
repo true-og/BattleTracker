@@ -59,7 +59,14 @@ public class BattleTrackerConfig {
     ) {
 
         public static DatabaseOptions load(ConfigurationSection section) {
-            SqlSerializer.SqlType type = SqlSerializer.SqlType.valueOf(section.getString("type").toUpperCase(Locale.ROOT));
+            String typeName = section.getString("type", "sqlite").trim().toUpperCase(Locale.ROOT);
+            SqlSerializer.SqlType type;
+            try {
+                type = SqlSerializer.SqlType.valueOf(typeName);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Unknown database type '" + section.getString("type") + "'. Supported types: sqlite, mysql, mariadb.", e);
+            }
+
             String prefix = section.getString("prefix");
             String db = section.getString("db");
             String url = section.getString("url");

@@ -93,11 +93,17 @@ public final class SqlInstance {
     private void initDataSource() {
         Connection connection = null;
 
-        // See if the driver exists
-        try {
-            Class.forName(this.type.getDriver());
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Could not find SQL driver " + this.type.getDriver());
+        boolean driverLoaded = false;
+        for (String driver : this.type.getDrivers()) {
+            try {
+                Class.forName(driver);
+                driverLoaded = true;
+                break;
+            } catch (ClassNotFoundException ignored) {
+            }
+        }
+        if (!driverLoaded) {
+            throw new IllegalStateException("Could not find SQL driver for " + this.type.getName() + ": " + this.type.getDrivers());
         }
 
         String connectionString;
@@ -110,12 +116,12 @@ public final class SqlInstance {
                 maxActive = 2;
                 minIdle = 1;
                 break;
-            case MYSQL:
+            case MYSQL, MARIADB:
             default:
                 minIdle = 10;
                 maxActive = 20;
-                datasourceString = "jdbc:mysql://" + this.url + ":" + this.port + "/" + this.db + "?autoReconnect=true";
-                connectionString = "jdbc:mysql://" + this.url + ":" + this.port + "?autoReconnect=true";
+                datasourceString = this.type.getJdbcProtocol() + "://" + this.url + ":" + this.port + "/" + this.db + "?autoReconnect=true";
+                connectionString = this.type.getJdbcProtocol() + "://" + this.url + ":" + this.port + "?autoReconnect=true";
                 break;
         }
 
@@ -126,7 +132,7 @@ public final class SqlInstance {
             throw new IllegalStateException("Could not create data source for SQL connection", e);
         }
 
-        if (this.type == SqlSerializer.SqlType.MYSQL) {
+        if (this.type.isMysqlLike()) {
             String statement = String.format(CREATE_DATABASE, this.db);
             try {
                 connection = DriverManager.getConnection(connectionString, this.username, this.password);

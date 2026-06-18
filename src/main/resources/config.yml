@@ -16,11 +16,11 @@ rating:
 
 # Database options
 database:
-  type: sqlite # sqlite or mysql
+  type: sqlite # sqlite, mysql, or mariadb
   prefix: bt_
   db: battletracker # Database name
-  url : localhost # Ignored if not mysql
-  port : "3306" # Ignored if not mysql
+  url : localhost # Ignored if sqlite
+  port : "3306" # Ignored if sqlite
   username: "^{MARIADB_USER}"
   password: "^{MARIADB_PASSWORD}"
 

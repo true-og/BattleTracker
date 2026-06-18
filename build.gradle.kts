@@ -36,6 +36,7 @@ dependencies {
     implementation(libs.bstats.bukkit)
     implementation(libs.commons.dbcp)
     implementation(libs.commons.pool)
+    implementation(libs.mysql.connector)
 
     compileOnlyApi(libs.purpur.api)
     compileOnlyApi(libs.battlearena)

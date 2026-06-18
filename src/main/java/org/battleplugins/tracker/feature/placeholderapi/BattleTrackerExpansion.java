@@ -2,10 +2,12 @@ package org.battleplugins.tracker.feature.placeholderapi;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.battleplugins.tracker.BattleTracker;
+import org.battleplugins.tracker.SqlTracker;
 import org.battleplugins.tracker.Tracker;
 import org.battleplugins.tracker.stat.Record;
 import org.battleplugins.tracker.stat.StatType;
 import org.battleplugins.tracker.util.Util;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -37,6 +39,10 @@ class BattleTrackerExpansion extends PlaceholderExpansion {
     @Override
     public @Nullable String onPlaceholderRequest(Player player, @NotNull String params) {
         String[] split = params.split("_");
+        if (split.length < 2) {
+            return null;
+        }
+
         String trackerName = split[0];
 
         // The tracker is not tracked or does not exist
@@ -94,11 +100,30 @@ class BattleTrackerExpansion extends PlaceholderExpansion {
             type = StatType.get(split[1] + "_" + split[2]);
         }
 
-        Record record = tracker.getRecord(player);
+        Record record = this.getRecord(tracker, player);
+        if (record == null) {
+            return "";
+        }
+
         if (type != null) {
             return Util.STAT_FORMAT.format(record.getStat(type));
         }
 
         return null;
+    }
+
+    private Record getRecord(Tracker tracker, Player player) {
+        if (tracker instanceof SqlTracker sqlTracker) {
+            Record record = sqlTracker.getRecords().getCached(player.getUniqueId());
+            if (record != null) {
+                return record;
+            }
+
+            // PlaceholderAPI resolves synchronously, but SQL records load asynchronously on join.
+            tracker.getRecord((OfflinePlayer) player);
+            return null;
+        }
+
+        return tracker.getRecord(player);
     }
 }

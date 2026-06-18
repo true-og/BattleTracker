@@ -20,23 +20,36 @@ public abstract class SqlSerializer {
     protected static final int TIMEOUT = 5;
 
     public enum SqlType {
-        MYSQL("MySQL", "com.mysql.jdbc.Driver"),
-        SQLITE("SQLite", "org.sqlite.JDBC");
+        MYSQL("MySQL", "jdbc:mysql", true, "com.mysql.cj.jdbc.Driver", "com.mysql.jdbc.Driver"),
+        MARIADB("MariaDB", "jdbc:mysql", true, "com.mysql.cj.jdbc.Driver", "com.mysql.jdbc.Driver"),
+        SQLITE("SQLite", "jdbc:sqlite", false, "org.sqlite.JDBC");
 
         private final String name;
-        private final String driver;
+        private final String jdbcProtocol;
+        private final boolean mysqlLike;
+        private final List<String> drivers;
 
-        SqlType(String name, String driver) {
+        SqlType(String name, String jdbcProtocol, boolean mysqlLike, String... drivers) {
             this.name = name;
-            this.driver = driver;
+            this.jdbcProtocol = jdbcProtocol;
+            this.mysqlLike = mysqlLike;
+            this.drivers = List.of(drivers);
         }
 
         public String getName() {
             return this.name;
         }
 
-        public String getDriver() {
-            return this.driver;
+        public String getJdbcProtocol() {
+            return this.jdbcProtocol;
+        }
+
+        public boolean isMysqlLike() {
+            return this.mysqlLike;
+        }
+
+        public List<String> getDrivers() {
+            return this.drivers;
         }
     }
 
@@ -159,7 +172,7 @@ public abstract class SqlSerializer {
         Boolean columnExists;
         SqlType type = SqlInstance.getInstance().getType();
         switch (type) {
-            case MYSQL:
+            case MYSQL, MARIADB:
                 statement = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? " +
                         "AND TABLE_NAME = ? AND COLUMN_NAME = ?";
                 columnExists = this.getBoolean(true, 2, statement, SqlInstance.getInstance().getDatabase(), table, column);

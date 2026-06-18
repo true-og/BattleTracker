@@ -330,7 +330,7 @@ public class TrackerSqlSerializer extends SqlSerializer {
     private String constructInsertOverallStatement() {
         StringBuilder builder = new StringBuilder();
         switch (this.getType()) {
-            case MYSQL:
+            case MYSQL, MARIADB:
                 String insertOverall = "INSERT INTO " + this.overallTable + " VALUES (?, ?, ";
                 builder.append(insertOverall);
                 for (int i = 0; i < this.overallColumns.size(); i++) {
@@ -374,7 +374,7 @@ public class TrackerSqlSerializer extends SqlSerializer {
     private String constructInsertVersusStatement() {
         StringBuilder builder = new StringBuilder();
         switch (this.getType()) {
-            case MYSQL:
+            case MYSQL, MARIADB:
                 String insertOverall = "INSERT INTO " + this.versusTable + " VALUES (?, ?, ";
                 builder.append(insertOverall);
                 for (int i = 0; i < this.versusColumns.size(); i++) {
@@ -416,7 +416,7 @@ public class TrackerSqlSerializer extends SqlSerializer {
 
     private String constructInsertTallyStatement() {
         return switch (this.getType()) {
-            case MYSQL -> "INSERT IGNORE INTO " + this.tallyTable + " VALUES (?, ?, ?, ?)";
+            case MYSQL, MARIADB -> "INSERT IGNORE INTO " + this.tallyTable + " VALUES (?, ?, ?, ?)";
             case SQLITE -> "INSERT OR REPLACE INTO " + this.tallyTable + " VALUES (?, ?, ?, ?)";
         };
     }
@@ -472,7 +472,7 @@ public class TrackerSqlSerializer extends SqlSerializer {
                 "timestamp TIMESTAMP NOT NULL, " +
                 "PRIMARY KEY (id1, id2, timestamp)";
 
-        if (this.getType() == SqlType.MYSQL) {
+        if (this.getType().isMysqlLike()) {
             createTally += ", INDEX (id1), INDEX (id2))";
         } else {
             createTally += ")";
