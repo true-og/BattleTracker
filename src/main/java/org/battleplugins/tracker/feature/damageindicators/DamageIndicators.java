@@ -8,6 +8,7 @@ import org.battleplugins.tracker.util.Util;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -58,6 +59,11 @@ public record DamageIndicators(
             }
 
             Entity damaged = event.getEntity();
+
+            // Item frames, paintings and other non-living entities take no combat damage; skip indicators.
+            if (!(damaged instanceof LivingEntity)) {
+                return;
+            }
 
             double xRand = ThreadLocalRandom.current().nextDouble(0.4, 0.7) / (ThreadLocalRandom.current().nextBoolean() ? 1 : -1);
             double yRand = ThreadLocalRandom.current().nextDouble(0.5, 1.5);
