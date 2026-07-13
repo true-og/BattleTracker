@@ -2,6 +2,8 @@
 
 A standalone plugin that tracks PVP & PVE statistics along with a suite of combat features to enhance server gameplay.
 
+BattleTracker records SMP activity only. Deaths, kills, ratings, KDR changes, and damage recaps from Duels-OG or Spleef-OG are excluded.
+
 # Features
 ## PVP and PVE Records
 One of the core features of BattleTracker is its robust tracking system for PVP and PVE statistics. BattleTracker tracks a variety of statistics including kills, deaths, killstreaks, and more. These statistics are saved in MySQL or SQLite, allowing them to be shared across Minecraft servers, or accessed by web applications.

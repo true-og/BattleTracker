@@ -42,7 +42,6 @@ killstreaks:
   # - global: all players
   # - world: only players in the same world
   # - local: only the player and the target
-  # - arena: only players in the same arena (requires BattleArena)
   audience: global
   messages:
     default: "<white><gold>%player%</gold> is on a killstreak of <red>%kills%</red> kills!</white>"
@@ -57,7 +56,6 @@ rampage:
   # - global: all players
   # - world: only players in the same world
   # - local: only the player and the target
-  # - arena: only players in the same arena (requires BattleArena)
   audience: global
   messages:
     default: "<white><gold>%player%</gold> is on a rampage!</white>"
@@ -71,7 +69,6 @@ death-messages:
   # - global: all players
   # - world: only players in the same world
   # - local: only the player and the target
-  # - arena: only players in the same arena (requires BattleArena)
   audience: world
   # World death messages
   world:

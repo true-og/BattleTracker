@@ -48,7 +48,6 @@ death-messages:
   # - global: all players
   # - world: only players in the same world
   # - local: only the player and the target
-  # - arena: only players in the same arena (requires BattleArena)
   audience: global
   # World death messages
   world:

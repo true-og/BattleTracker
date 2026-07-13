@@ -9,6 +9,7 @@ import org.battleplugins.tracker.stat.Record;
 import org.battleplugins.tracker.stat.StatType;
 import org.battleplugins.tracker.stat.TallyEntry;
 import org.battleplugins.tracker.util.DuelsHook;
+import org.battleplugins.tracker.util.SpleefHook;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -42,8 +43,8 @@ public class PvPListener implements Listener {
             return;
         }
 
-        // Duel deaths/kills must not be tracked; use the pre-captured marker (live query races Duels' own death handler).
-        if (DuelsHook.isDuelDeath(killed)) {
+        // Minigame deaths must not be tracked; use pre-captured markers because match state can change during death.
+        if (DuelsHook.isDuelDeath(killed) || SpleefHook.isSpleefDeath(killed)) {
             return;
         }
 
@@ -70,6 +71,10 @@ public class PvPListener implements Listener {
         }
 
         if (killer == null) {
+            return;
+        }
+
+        if (DuelsHook.isInMatch(killer) || SpleefHook.isInSpleef(killer)) {
             return;
         }
 
@@ -124,8 +129,8 @@ public class PvPListener implements Listener {
             return;
         }
 
-        // Don't build a damage recap from a Duels match (after cheap exits to keep reflection off the common path).
-        if (DuelsHook.isInMatch(damaged)) {
+        // Don't build a damage recap from a minigame (after cheap exits to keep reflection off the common path).
+        if (DuelsHook.isInMatch(damaged) || SpleefHook.isInSpleef(damaged)) {
             return;
         }
 
@@ -144,6 +149,10 @@ public class PvPListener implements Listener {
         }
 
         if (!(sourceEntity instanceof Player player)) {
+            return;
+        }
+
+        if (DuelsHook.isInMatch(player) || SpleefHook.isInSpleef(player)) {
             return;
         }
 

@@ -27,8 +27,6 @@ repositories {
 
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://repo.purpurmc.org/snapshots")
-    maven("https://repo.battleplugins.org/releases/")
-    maven("https://repo.battleplugins.org/snapshots/")
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
 }
 
@@ -39,7 +37,6 @@ dependencies {
     implementation(libs.mysql.connector)
 
     compileOnlyApi(libs.purpur.api)
-    compileOnlyApi(libs.battlearena)
     compileOnlyApi(libs.placeholderapi)
 }
 
@@ -143,7 +140,4 @@ modrinth {
     uploadFile.set(tasks.shadowJar)
     gameVersions.set(supportedVersions)
 
-    dependencies {
-        optional.project("battlearena")
-    }
 }

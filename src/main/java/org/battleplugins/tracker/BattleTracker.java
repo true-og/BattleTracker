@@ -2,7 +2,6 @@ package org.battleplugins.tracker;
 
 import org.battleplugins.tracker.event.BattleTrackerPreInitializeEvent;
 import org.battleplugins.tracker.feature.Feature;
-import org.battleplugins.tracker.feature.battlearena.BattleArenaFeature;
 import org.battleplugins.tracker.feature.combatlog.CombatLog;
 import org.battleplugins.tracker.feature.damageindicators.DamageIndicators;
 import org.battleplugins.tracker.feature.placeholderapi.PlaceholderApiFeature;
@@ -55,7 +54,6 @@ public class BattleTracker extends JavaPlugin {
     private final Map<String, RatingCalculator> ratingCalculators = new HashMap<>();
     private final Map<Tracker, List<Listener>> trackerListeners = new HashMap<>();
 
-    private BattleArenaFeature battleArenaFeature;
     private PlaceholderApiFeature placeholderApiFeature;
 
     private CombatLog combatLog;
@@ -89,6 +87,8 @@ public class BattleTracker extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new BattleTrackerListener(this), this);
         // Captures duel match membership before Duels tears the match down on death.
         Bukkit.getPluginManager().registerEvents(new org.battleplugins.tracker.util.DuelsHook.DeathGuard(), this);
+        // Captures Spleef membership before Spleef processes an elimination.
+        Bukkit.getPluginManager().registerEvents(new org.battleplugins.tracker.util.SpleefHook.DeathGuard(), this);
 
         // Register default calculators
         this.registerCalculator(new EloCalculator(this.config.getRating().elo()));
@@ -130,9 +130,6 @@ public class BattleTracker extends JavaPlugin {
             this.saveResource("messages.yml", false);
         }
 
-        this.battleArenaFeature = new BattleArenaFeature();
-        this.battleArenaFeature.onEnable(this);
-
         this.placeholderApiFeature = new PlaceholderApiFeature();
         this.placeholderApiFeature.onEnable(this);
     }
@@ -156,10 +153,6 @@ public class BattleTracker extends JavaPlugin {
     private CompletableFuture<Void> disable(boolean block) {
         this.shuttingDown = true;
         this.cancelAutoSaveTask();
-
-        if (this.battleArenaFeature != null) {
-            this.unloadFeature(this.battleArenaFeature);
-        }
 
         if (this.placeholderApiFeature != null) {
             this.unloadFeature(this.placeholderApiFeature);

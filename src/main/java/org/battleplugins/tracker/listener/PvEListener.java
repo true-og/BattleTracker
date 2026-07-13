@@ -10,6 +10,7 @@ import org.battleplugins.tracker.feature.recap.RecapEntry;
 import org.battleplugins.tracker.stat.Record;
 import org.battleplugins.tracker.stat.StatType;
 import org.battleplugins.tracker.util.DuelsHook;
+import org.battleplugins.tracker.util.SpleefHook;
 import org.battleplugins.tracker.util.Util;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Entity;
@@ -46,8 +47,8 @@ public class PvEListener implements Listener {
             return;
         }
 
-        // Duel PvE/world deaths (fall, lava, void, mobs) must not count; use pre-captured marker (live query races Duels).
-        if (DuelsHook.isDuelDeath(killed)) {
+        // Minigame PvE/world deaths must not count; use pre-captured markers because match state can change during death.
+        if (DuelsHook.isDuelDeath(killed) || SpleefHook.isSpleefDeath(killed)) {
             return;
         }
 
@@ -130,8 +131,8 @@ public class PvEListener implements Listener {
             return;
         }
 
-        // A duelist killing a mob mid-match must not be tracked.
-        if (DuelsHook.isInMatch(killer)) {
+        // A minigame player killing a mob mid-match must not be tracked.
+        if (DuelsHook.isInMatch(killer) || SpleefHook.isInSpleef(killer)) {
             return;
         }
 
@@ -162,8 +163,8 @@ public class PvEListener implements Listener {
             return;
         }
 
-        // Don't build a damage recap from a Duels match (after cheap exits to keep reflection off the common path).
-        if (DuelsHook.isInMatch(player)) {
+        // Don't build a damage recap from a minigame (after cheap exits to keep reflection off the common path).
+        if (DuelsHook.isInMatch(player) || SpleefHook.isInSpleef(player)) {
             return;
         }
 
