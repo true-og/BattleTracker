@@ -20,16 +20,21 @@ record TrackerLoader(BattleTracker battleTracker, Configuration configuration, P
 
     public void load() {
         String name = this.configuration.getString("name");
+        List<String> trackedData = this.configuration.getStringList("tracked-statistics");
+        boolean enabled = this.configuration.getBoolean("enabled", !trackedData.isEmpty());
+        if (!enabled) {
+            return;
+        }
+
+        if (trackedData.isEmpty()) {
+            this.battleTracker.warn("No tracked data found for tracker {}!", name);
+            return;
+        }
+
         String calculatorName = this.configuration.getString("calculator");
         RatingCalculator calculator = this.battleTracker.getCalculator(calculatorName);
         if (calculator == null) {
             this.battleTracker.warn("Rating calculator {} not found!", calculatorName);
-            return;
-        }
-
-        List<String> trackedData = this.configuration.getStringList("tracked-statistics");
-        if (trackedData.isEmpty()) {
-            this.battleTracker.warn("No tracked data found for tracker {}!", name);
             return;
         }
 
